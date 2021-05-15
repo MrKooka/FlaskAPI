@@ -17,12 +17,27 @@ from apispec import APISpec
 from flask_apispec.extension import FlaskApiSpec
 from schemas import VideoSchema,UserSchema,AuthSchema
 from flask_apispec import use_kwargs,marshal_with
+import logging
 
 engine = create_engine('mysql+pymysql://root:1@localhost:27017/api', echo=True)
 session = scoped_session(sessionmaker(autocommit=False,autoflush=False,bind=engine))
 Base = declarative_base()
 Base.query = session.query_property()
 Base.metadata.create_all(bind=engine)
+
+
+def setup_logger():
+	logger = logging.getLogger(__name__)
+	logger.setLevel('DEBUG')
+	formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s:%(lineno)s')
+	file_handler = logging.FileHandler('log/api.log')
+	file_handler.setFormatter(formatter)
+	logger.addHandler(file_handler)
+
+	return logger
+
+logger = setup_logger()
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -42,6 +57,7 @@ app.config.update({
     ),
     'APISPEC_SWAGGER_URL': '/swagger/',
 })
+
 
 # Base = automap_base()
 # Base.prepare(engine,reflect=True)
@@ -65,11 +81,14 @@ app.config.update({
 @marshal_with(VideoSchema(many=True))
 def get_list():
 	try:
+
 		from models import Video
 
 		user_id = get_jwt_identity()
-		videos = Video.query.filter(Video.user_id==user_id)
+		videos = Video.get_user_list(user_id=user_id)
 	except Exception as e:
+		user_id = get_jwt_identity()
+		logger.warning(f'user:{user_id} tutorials - read action filed with error: {e}')
 		return {'message':str(e)}, 400
 	return videos
 
@@ -85,9 +104,9 @@ def update_list(**kwargs):
 
 		user_id = get_jwt_identity()
 		new_one = Video(user_id=user_id,**kwargs)
-		session.add(new_one)
-		session.commit()
+		new_one.save()
 	except Exception as e:
+		logger.warning(f'user:{user_id} tutorials - create action filed with error: {e}')
 		return {'message':str(e)}, 400
 
 	return new_one	
@@ -101,18 +120,17 @@ def update_tutorials(tutorials_id,**kwargs):
 		from models import Video
 	
 		user_id = get_jwt_identity()
-		pprint(user_id)
-		pprint(tutorials_id)
+		# item = Video.get(tutorials_id,user_id)
+		# item.update(**kwargs)
+		item = Video.update(tutorials_id,user_id,kwargs)
 
-
-		stmt = update(Video).where(and_(Video.id == tutorials_id,Video.user_id==user_id)).values(**kwargs)
-		session.execute(stmt)
-		session.commit()
-
-		item = session.execute(""" select * from videos where id='{id_}' """.format(id_ = tutorials_id)).first()
-		if not item:
-			return {'message':'No tutorials with this id '}, 400
+		# stmt = update(Video).where(and_(Video.id == tutorials_id,Video.user_id==user_id)).values(**kwargs)
+		# session.execute(stmt)
+		# session.commit()
+		# item = session.execute(""" select * from videos where id='{id_}' """.format(id_ = tutorials_id)).first()
 	except Exception as e:
+		logger.warning(f'user:{user_id},tutorial_id:{tutorials_id} tutorials - update action filed with error: {e}')
+
 		return {'message':str(e)}, 400
 
 	return item,200
@@ -125,18 +143,18 @@ def delete_tutorials(tutorials_id):
 		from models import Video
 
 		user_id = get_jwt_identity()
-
-		item = Video.query.filter(Video.id == tutorials_id,Video.user_id==user_id).first()
-		params = request.json
-		if not item:
-			return {'message':'No tutorials with this id '}, 400
-		stmt = delete(Video).where(and_(Video.id == tutorials_id,Video.user_id==user_id))
-		session.execute(stmt)
-		session.commit()
-		serialased = {'response':'content was delete'}
+		item = Video.get(tutorials_id,user_id)
+		item.delete()
+		# item = Video.query.filter(Video.id == tutorials_id,Video.user_id==user_id).first()
+		# params = request.json
+		# stmt = delete(Video).where(and_(Video.id == tutorials_id,Video.user_id==user_id))
+		# session.execute(stmt)
+		# session.commit()
 	except Exception as e:
+		logger.warning(f'user:{user_id},tutorial_id:{tutorials_id} tutorials - delete action filed with error: {e}')
+
 		return {'message':str(e)}, 400
-	return serialased,204
+	return 204
 
 
 @app.route('/register',methods=['POST'],endpoint='register')
@@ -151,6 +169,8 @@ def register(**kwargs):
 		session.commit()
 		token = user.get_token()
 	except Exception as e:
+		logger.warning(f'Register with email:{kwargs["email"]} files with error: {e}')
+
 		return {'message':str(e)}, 400
 	return {'access_token':token}
 
@@ -165,16 +185,21 @@ def login(**kwargs):
 		token = user.get_token()
 		return {'access_token':token,'user_id':user.id}
 	except Exception as e:
-		return {'message':str(e)}, 400
-# @app.errorhandler(422)
-# def error_handler(err):
-# 	headers = err.data.get('headers',None)
-# 	message = err.data.get('message',['Invalid request'])
-# 	if headers:
-# 		return jsonify({'message':message}), 400 ,headers
-# 	else:
-# 		return jsonify({'message':message}), 400 ,headers
+		logger.warning(f'Login with email:{kwargs["email"]} files with error: {e}')
 
+		return {'message':str(e)}, 400
+
+
+@app.errorhandler(422)
+def error_handler(err):
+	headers = err.data.get('headers',None)
+	message = err.data.get('message',['Invalid request'])
+	logger.warning(f'Invalid input params:{message}')
+
+	if headers:
+		return jsonify({'message':message}), 400 ,headers
+	else:
+		return jsonify({'message':message}), 400 ,headers
 
 
 
