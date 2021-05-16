@@ -12,6 +12,7 @@ class Video(Base):
 	user_id = db.Column(db.Integer,db.ForeignKey('userapi.id'))
 	name = db.Column(db.String(225),nullable=False)
 	desc = db.Column(db.String(500),nullable=False)
+
 	@classmethod
 	def get_user_list(cls,user_id):
 		try:
@@ -21,6 +22,17 @@ class Video(Base):
 			session.rollback()
 			raise
 		return videos
+
+	@classmethod
+	def get_list(cls):
+		try:
+			videos = cls.query.all()
+			session.commit()
+		except Exception:
+			session.rollback()
+			raise
+		return videos
+
 
 	def save(self):
 		try:
@@ -41,18 +53,14 @@ class Video(Base):
 			session.rollback()
 			raise
 		return video
+		
 	@classmethod
 	def update(cls,tutorials_id,user_id,kwargs):
 		try:
-			# for key,value in kwargs.items():
-				# setattr(self,key,value)
 			stmt = update(cls).where(and_(cls.id == tutorials_id,cls.user_id==user_id)).values(**kwargs)
 			session.execute(stmt)
 			session.commit()
 			item = cls.query.filter(cls.id == tutorials_id).first()
-			# item = session.execute(""" select * from videos where id='{id_}' """.format(id_ = tutorials_id)).first()
-
-
 
 		except Exception:
 			session.rollback()
@@ -67,8 +75,7 @@ class Video(Base):
 			session.rollback()
 			raise
 
-
-
+	
 
 
 

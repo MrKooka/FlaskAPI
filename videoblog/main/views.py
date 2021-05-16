@@ -3,8 +3,25 @@ from videoblog import logger,docs
 from videoblog.schemas import VideoSchema,UserSchema,AuthSchema
 from flask_apispec import use_kwargs,marshal_with
 from flask_jwt_extended import JWTManager,jwt_required,get_jwt_identity
+from videoblog.base_view import BaseView
+from videoblog.models import Video
+
 
 vids = Blueprint('vids',__name__)
+
+
+class ListView(BaseView):
+	@marshal_with(VideoSchema(many=True))
+	def get(self):
+		try:
+			videos = Video.get_list()
+		except Exception as e:
+			logger.warning(f' tutorials - read action filed with error: {e}')
+			return {'message':str(e)}, 400
+		return videos
+
+
+
 
 @vids.route('/tutorials',methods=['GET'],endpoint='get_list')
 @jwt_required()
@@ -12,7 +29,6 @@ vids = Blueprint('vids',__name__)
 def get_list():
 	try:
 
-		from videoblog.models import Video
 
 		user_id = get_jwt_identity()
 		videos = Video.get_user_list(user_id=user_id)
@@ -30,7 +46,6 @@ def get_list():
 @marshal_with(VideoSchema)
 def update_list(**kwargs):
 	try:
-		from videoblog.models import Video
 
 		user_id = get_jwt_identity()
 		new_one = Video(user_id=user_id,**kwargs)
@@ -47,7 +62,6 @@ def update_list(**kwargs):
 @marshal_with(VideoSchema)
 def update_tutorials(tutorials_id,**kwargs):
 	try:
-		from videoblog.models import Video
 	
 		user_id = get_jwt_identity()
 		item = Video.update(tutorials_id,user_id,kwargs)
@@ -64,7 +78,6 @@ def update_tutorials(tutorials_id,**kwargs):
 @marshal_with(VideoSchema)
 def delete_tutorials(tutorials_id):
 	try:
-		from videoblog.models import Video
 
 		user_id = get_jwt_identity()
 		item = Video.get(tutorials_id,user_id)
@@ -92,3 +105,4 @@ docs.register(update_list,blueprint='vids')
 docs.register(get_list,blueprint='vids')
 docs.register(update_tutorials,blueprint='vids')
 docs.register(delete_tutorials,blueprint='vids')
+ListView.register(vids,docs,'/main','listview')
