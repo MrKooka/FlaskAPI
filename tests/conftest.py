@@ -6,7 +6,7 @@ from videoblog import app,Base,session as db_session
 from videoblog.models import User,Video
 from sqlalchemy import create_engine
 
-engine = create_engine('sqlite:///sqlite_python.db')
+engine = create_engine('sqlite:///test.db')
 
 @pytest.yield_fixture(scope='function')
 def testapp():
