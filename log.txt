@@ -1,5 +1,0 @@
-2021/06/04 16:28:12 Micro started
-2021/06/04 16:28:48 real runtime file syntax
-2021/06/04 16:29:17 real runtime file syntax
-2021/06/04 16:29:30 real runtime file syntax
-2021/06/04 16:30:03 real runtime file syntax
