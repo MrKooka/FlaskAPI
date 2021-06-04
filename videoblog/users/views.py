@@ -55,16 +55,6 @@ class ProfileView(BaseView):
 			logger.warning(f'user:{user_id} filesr read profile: {e}')
 		return user
 
-# @users.errorhandler(422)
-# def error_handler(err):
-# 	headers = err.data.get('headers',None)
-# 	message = err.data.get('message',['Invalid request'])
-# 	logger.warning(f'Invalid input params:{message}')
-
-# 	if headers:
-# 		return jsonify({'message':message}), 400 ,headers
-# 	else:
-# 		return jsonify({'message':message}), 400 ,headers
 
 
 docs.register(login,blueprint='users')

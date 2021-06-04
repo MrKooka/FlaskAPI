@@ -11,9 +11,7 @@ from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec import APISpec
 from flask_apispec.extension import FlaskApiSpec
 import logging
-#моя версия
 engine = create_engine('mysql+pymysql://root:1@localhost:27017/api', echo=True)
-# engine = create_engine('sqlite:///sqlite_python.db')
 session = scoped_session(sessionmaker(autocommit=False,autoflush=False,bind=engine))
 Base = declarative_base()
 Base.query = session.query_property()
@@ -52,21 +50,6 @@ app.config.update({
 })
 
 
-# Base = automap_base()
-# Base.prepare(engine,reflect=True)
-# Avto = Base.classes.avto
-# Cities = Base.classes.cities
-# Session = sessionmaker(bind = engine )
-# session = Session()
-# Base = 
-# conn = engine.connect()
-# dbresult = session.query(Avto).filter(Avto.price < 200000).all()
-# result = []
-# for i in dbresult:
-	# result.append({
-			# 'name':i.name,
-			# 'price':i.price,
-			# 'year':i.year})
 
 from .main.views import vids
 from .users.views import users

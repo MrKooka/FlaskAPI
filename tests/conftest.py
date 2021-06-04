@@ -5,7 +5,6 @@ import pytest
 from videoblog import app,Base,session as db_session
 from videoblog.models import User,Video
 from sqlalchemy import create_engine
-
 engine = create_engine('sqlite:///test.db')
 
 @pytest.yield_fixture(scope='function')
@@ -39,6 +38,7 @@ def user(session):
 @pytest.fixture
 def client(testapp):
 	return testapp.test_client()
+
 
 @pytest.fixture
 def user_token(user, client):
